@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+from datetime import datetime
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -131,10 +132,17 @@ def weather_percent(value: str) -> float:
 		return 0.0
 
 
-def write_metadata(metadata: list[dict[str, str]], output_dir: Path) -> None:
+def timestamped_path(path: Path, run_timestamp: str) -> Path:
+	"""Add a run timestamp before a file's extension."""
+	return path.with_name(f"{path.stem}_{run_timestamp}{path.suffix}")
+
+
+def write_metadata(
+	metadata: list[dict[str, str]], output_dir: Path, filename: str
+) -> None:
 	"""Write metadata for every image listed on the webpage."""
 	output_dir.mkdir(parents=True, exist_ok=True)
-	with (output_dir / METADATA_FILENAME).open("w", encoding="utf-8") as metadata_file:
+	with (output_dir / filename).open("w", encoding="utf-8") as metadata_file:
 		json.dump(metadata, metadata_file, indent=2)
 		metadata_file.write("\n")
 
@@ -147,7 +155,11 @@ def download_images(metadata: list[dict[str, str]], output_dir: Path) -> tuple[i
 	errors = 0
 
 	for image in metadata:
-		if weather_percent(image["Weather"]) < 75:
+		is_dark = (
+			image["Filter"].strip().lower() == "opaque"
+			and image["Object"].strip().lower() == "calibration"
+		)
+		if not is_dark: # KN removed weather filter and weather_percent(image["Weather"]) < 75:
 			LOGGER.info("Skipped FITS file below weather threshold: %s", image["Image Filename"])
 			skipped += 1
 			continue
@@ -156,12 +168,7 @@ def download_images(metadata: list[dict[str, str]], output_dir: Path) -> tuple[i
 		if not filename:
 			LOGGER.warning("Skipping FITS URL with no filename: %s", image_url)
 			continue
-		destination_dir = (
-			output_dir / "Darks"
-			if image["Filter"].strip().lower() == "opaque"
-			and image["Object"].strip().lower() == "calibration"
-			else output_dir
-		)
+		destination_dir = output_dir / "Darks" if is_dark else output_dir
 		destination_dir.mkdir(parents=True, exist_ok=True)
 		destination = destination_dir / filename
 		if destination.exists():
@@ -188,7 +195,7 @@ def download_images(metadata: list[dict[str, str]], output_dir: Path) -> tuple[i
 	return downloaded, skipped, errors
 
 
-def main() -> None:
+def main() -> int:
 	parser = argparse.ArgumentParser(description=__doc__)
 	parser.add_argument(
 		"-o",
@@ -204,18 +211,22 @@ def main() -> None:
 		help="logfile path (default: GetMicroObservatoryImages.log)",
 	)
 	args = parser.parse_args()
+	run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+	log_file = timestamped_path(args.log_file, run_timestamp)
+	metadata_file = timestamped_path(Path(METADATA_FILENAME), run_timestamp)
 
-	args.log_file.parent.mkdir(parents=True, exist_ok=True)
+	log_file.parent.mkdir(parents=True, exist_ok=True)
 	logging.basicConfig(
-		filename=args.log_file,
+		filename=log_file,
 		level=logging.INFO,
 		format="%(asctime)s %(levelname)s %(message)s",
+		force=True,
 	)
 	LOGGER.info("Program run started")
 
 	try:
 		metadata = find_image_metadata(fetch_directory())
-		write_metadata(metadata, args.output_dir)
+		write_metadata(metadata, args.output_dir, metadata_file.name)
 		downloaded, skipped, errors = download_images(metadata, args.output_dir)
 	except Exception:
 		LOGGER.exception("Program run failed")
