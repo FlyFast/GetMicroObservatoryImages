@@ -159,7 +159,7 @@ def download_images(metadata: list[dict[str, str]], output_dir: Path) -> tuple[i
 			image["Filter"].strip().lower() == "opaque"
 			and image["Object"].strip().lower() == "calibration"
 		)
-		if not is_dark: # KN removed weather filter and weather_percent(image["Weather"]) < 75:
+		if not is_dark and weather_percent(image["Weather"]) >= 0:
 			LOGGER.info("Skipped FITS file below weather threshold: %s", image["Image Filename"])
 			skipped += 1
 			continue
