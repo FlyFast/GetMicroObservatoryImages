@@ -124,14 +124,6 @@ def find_image_metadata(page: str, base_url: str = IMAGE_DIRECTORY_URL) -> list[
 	return metadata
 
 
-def weather_percent(value: str) -> float:
-	"""Return the percentage at the start of a Weather table value."""
-	try:
-		return float(value.rstrip().split("%", 1)[0])
-	except ValueError:
-		return 0.0
-
-
 def timestamped_path(path: Path, run_timestamp: str) -> Path:
 	"""Add a run timestamp before a file's extension."""
 	return path.with_name(f"{path.stem}_{run_timestamp}{path.suffix}")
@@ -159,10 +151,6 @@ def download_images(metadata: list[dict[str, str]], output_dir: Path) -> tuple[i
 			image["Filter"].strip().lower() == "opaque"
 			and image["Object"].strip().lower() == "calibration"
 		)
-		if not is_dark and weather_percent(image["Weather"]) >= 0:
-			LOGGER.info("Skipped FITS file below weather threshold: %s", image["Image Filename"])
-			skipped += 1
-			continue
 		image_url = image["FITS Image"]
 		filename = Path(urlparse(image_url).path).name
 		if not filename:

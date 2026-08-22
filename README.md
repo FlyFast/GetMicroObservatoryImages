@@ -15,6 +15,7 @@ Each run is recorded in a new timestamped logfile based on
 `GetMicroObservatoryImages.log`; use `--log-file` to choose another filename
 base. Download failures include their error traceback.
 Metadata for every FITS file listed by the webpage is written to
- a new timestamped `images/metadata_*.json` file. Only non-dark files are downloaded.
+ a new timestamped `images/metadata_*.json` file. All FITS files are downloaded
+ regardless of their Weather value.
 Files whose Filter is `Opaque` and Object is `Calibration` are saved in
 `images/Darks/` regardless of their Weather value.
