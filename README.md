@@ -1,6 +1,8 @@
 # GetMicroObservatoryImages
 Download the lastest exoplanet FITS imagery from the Micro Observatory
 
+This program was developed with Copilot AI.
+
 ## Usage
 
 Run the downloader from this directory:
