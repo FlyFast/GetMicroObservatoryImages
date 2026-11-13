@@ -1,5 +1,8 @@
 # GetMicroObservatoryImages
-Download the lastest exoplanet FITS imagery from the Micro Observatory
+Download the lastest exoplanet FITS imagery from the Micro Observatory.
+
+This code has been deprecated.
+Not recommended for use on the current Micro Observatory site.
 
 This program was developed with Copilot AI.
 
